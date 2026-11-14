@@ -128,7 +128,12 @@ class CloudinaryService {
     }
   }
 
+  /// Signed Admin API calls need the secret. Builds without it (e.g. the
+  /// public web demo) skip them; Firestore still records the moderation.
+  bool get _canSign => _apiKey.isNotEmpty && _apiSecret.isNotEmpty;
+
   Future<void> _updateTag(String command, String publicId, String tag) async {
+    if (!_canSign) return;
     final timestamp = (DateTime.now().millisecondsSinceEpoch / 1000).round();
     final params = <String, String>{
       'command': command,
@@ -158,6 +163,7 @@ class CloudinaryService {
 
   /// Deletes an image from Cloudinary
   Future<void> deleteImage(String imageUrl) async {
+    if (!_canSign) return;
     try {
       // Extract public ID
       final publicId = _extractPublicId(imageUrl);
@@ -181,9 +187,6 @@ class CloudinaryService {
       final bytes = utf8.encode(signString);
       final digest = sha1.convert(bytes);
       request.fields['signature'] = digest.toString();
-
-      print("Debug - String to sign: $signString"); // Debug log
-      print("Debug - Generated signature: ${digest.toString()}"); // Debug log
 
       var response = await request.send();
       final respStr = await response.stream.bytesToString();
