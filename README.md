@@ -7,6 +7,13 @@ friends, and grow a dino pet that evolves as they earn eco points.
 Final Year Project (Multimedia University, Jan – Apr 2026), maintained and
 improved afterwards.
 
+**Try it:**
+[🌐 Live demo](https://recycletrackle.web.app) (any browser, desktop or phone) ·
+[📱 Download the Android APK](https://github.com/yihan0131/dino-track/releases/latest)
+
+Sign up with any email, or sign in with Google. The APK is not on Google Play,
+so Android asks you to allow installing from this source.
+
 <p>
   <img src="docs/screenshots/02_home.jpg" width="200" alt="Home with dino pet">
   <img src="docs/screenshots/06_map_stations.jpg" width="200" alt="Recycling station map">
