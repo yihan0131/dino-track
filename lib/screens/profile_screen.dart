@@ -520,7 +520,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const Divider(height: 32),
                       if (currentUser?.isAdmin == true) ...[
-                        const Divider(height: 32),
                         _buildMenuItem(
                           Icons.admin_panel_settings,
                           'Admin Panel',
@@ -532,8 +531,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                         ),
+                        const Divider(height: 32),
                       ],
-                      const Divider(height: 32),
                       _buildMenuItem(
                         Icons.logout,
                         'Logout',
