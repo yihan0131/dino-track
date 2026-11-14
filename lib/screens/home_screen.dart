@@ -139,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       dinoStage = "Stage 5: Eco Dino Warrior";
       nextStageLabel = "Max Level";
-      pointsToNextStage = 500; // Maximum stage reached
+      pointsToNextStage = 0; // Maximum stage reached, nothing left to unlock
     }
   }
 
@@ -406,7 +406,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   children: [
                                     _buildStatContainer("Points", "$ecoPoints", Colors.amber.shade100),
                                     _buildStatContainer("Next Stage", nextStageLabel, Colors.green.shade100, width: 100), // Width reduced since labels are shorter now
-                                    _buildStatContainer("Next", "$pointsToNextStage pts", Colors.blue.shade100),
+                                    _buildStatContainer("Next", pointsToNextStage > 0 ? "$pointsToNextStage pts" : "—", Colors.blue.shade100),
                                   ],
                                 ),
                               ],
