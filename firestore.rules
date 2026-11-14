@@ -1,0 +1,147 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if user is the owner of a resource
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Admins are marked by isAdmin on their own user document. Only the
+    // Firebase console can set it (see the users rules below).
+    function isAdmin() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true;
+    }
+
+    // Fields that changed in this update
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // Allow anyone to read recycling guides
+    match /recycling_guides/{guideId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Allow anyone to read recycling stations
+ match /recycling_stations/{stationId} {
+  allow read: if true;
+  allow create: if isAuthenticated();
+  allow update, delete: if false;
+}
+
+
+    // Allow authenticated users to create reports
+    match /station_reports/{reportId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    // Eco-challenges rules - FIXED FOR SYSTEM CHALLENGES
+    match /eco_challenges/{challengeId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+
+      // FIXED rule for system challenges:
+      allow update: if isAuthenticated() && (
+                     resource.data.createdBy == request.auth.uid ||
+                     resource.data.createdBy == 'system');
+
+      // Delete permissions:
+      allow delete: if isAuthenticated() &&
+                    resource.data.createdBy == request.auth.uid &&
+                    resource.data.createdBy != 'system';
+    }
+
+    // User participation in challenges
+    match /user_challenges/{userChallengeId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Owners update their own progress. Other users may only touch the
+      // photo list (reporting a photo flags it there). Admins review reports.
+      allow update: if isAuthenticated() && (
+                    resource.data.userId == request.auth.uid ||
+                    changedKeys().hasOnly(['checkInPhotos']) ||
+                    isAdmin());
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // User data access
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+
+      // A user creates their own profile, never as an admin.
+      allow create: if isOwner(userId) &&
+                    request.resource.data.get('isAdmin', false) == false;
+
+      // A user updates their own profile, but can't change isAdmin.
+      // Admins can deduct points (photo moderation) from other users.
+      allow update: if (isOwner(userId) &&
+                     request.resource.data.get('isAdmin', false) ==
+                       resource.data.get('isAdmin', false)) ||
+                    (isAdmin() &&
+                     changedKeys().hasOnly(['ecoPoints', 'dinoStage',
+                                            'processedReports', 'hasUnseenLevelUp']) &&
+                     request.resource.data.ecoPoints <= resource.data.ecoPoints);
+
+      allow delete: if isOwner(userId);
+    }
+
+    // Photo reports collection
+    match /photo_reports/{reportId} {
+      allow create: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow update: if isAuthenticated() &&
+        isAdmin();
+      allow delete: if false;
+    }
+
+
+
+
+    // Recycling goals collection rules
+    match /recycling_goals/{goalId} {
+      // Signed-in users can read goals (the app never reads them logged out)
+      allow read: if isAuthenticated();
+
+      // User can create their own goals
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+
+      // User can update or delete only their own goals
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+
+
+    // Recycling records collection
+    match /recycling_records/{recordId} {
+      // Users can read all recycling records (needed for statistics and leaderboards)
+      allow read: if isAuthenticated();
+
+      // Users can only create records for themselves
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+
+      // Users can only update/delete their own records
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Daily recycling points collection
+    match /daily_recycling_points/{pointRecordId} {
+      // Allow reading for the system to check if points were already awarded
+      allow read: if isAuthenticated();
+
+      // Only allow creation by authenticated users (system creates these)
+      allow create: if isAuthenticated();
+
+      // Don't allow updates or deletes to prevent manipulation
+      allow update, delete: if false;
+    }
+  }
+}
